@@ -20,13 +20,18 @@ jobs:
         run: |
           chmod -R +x tools/agbcc
           cd tools/agbcc
-          # Build compiler
+          # Build compiler engine
           make CFLAGS="-O2 -Wno-error" -C gcc
           
-          # Create and populate include directory
+          # Prepare directory structure
           mkdir -p bin include
           cp gcc/agbcc bin/agbcc
+          
+          # Force header placement in both the tool root and the gcc engine directory
+          # This satisfies hardcoded paths in legacy compilers
           cp -r ginclude/* include/
+          mkdir -p gcc/include
+          cp -r ginclude/* gcc/include/
           cd ../..
 
       - name: Build Tools
@@ -35,15 +40,13 @@ jobs:
 
       - name: Build ROM
         run: |
-          # Use absolute paths for all compiler-related environment variables
+          # Exporting all paths required by the agbcc wrapper and the makefile
           export AGBCCPATH=$PWD/tools/agbcc
           export COMPILER_PATH=$PWD/tools/agbcc/gcc
           export GCC_EXEC_PREFIX=$PWD/tools/agbcc/
-          
-          # Run make with forced include path via environment variable
-          # This is the most compatible way to pass include paths to agbcc
           export C_INCLUDE_PATH=$PWD/tools/agbcc/include
           
+          # Start the build
           make
           
       - name: Upload ROM Artifact
