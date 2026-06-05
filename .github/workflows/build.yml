@@ -18,17 +18,20 @@ jobs:
 
       - name: Build agbcc
         run: |
-          chmod +x tools/agbcc/build.sh
+          # Recursively apply execute permissions to all files in tools/agbcc
+          chmod -R +x tools/agbcc
           cd tools/agbcc
           ./build.sh
           cd ../..
 
       - name: Build Tools
         run: |
+          # Build the remaining project-specific tools (gbagfx, etc.)
           make tools
 
       - name: Build ROM
         run: |
+          # Build the game ROM
           make
 
       - name: Upload ROM Artifact
