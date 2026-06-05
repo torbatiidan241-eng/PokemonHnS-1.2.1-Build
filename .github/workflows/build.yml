@@ -23,13 +23,11 @@ jobs:
           # Build the compiler
           make CFLAGS="-O2 -Wno-error" -C gcc
           
-          # Ensure 'bin' exists and copy the binary
+          # Ensure bin exists and move binary
           mkdir -p bin
           cp gcc/agbcc bin/agbcc
           
-          # IMPORTANT: Verify headers exist. 
-          # If the folder 'include' is missing or empty, the compiler will fail.
-          # We copy ginclude files to include to ensure the compiler has its standard headers.
+          # Fix headers: ensure the compiler can find its internal headers
           mkdir -p include
           cp -r ginclude/* include/
           cd ../..
@@ -40,12 +38,12 @@ jobs:
 
       - name: Build ROM
         run: |
-          # 1. Set AGBCCPATH: This is the root directory for agbcc.
-          # 2. Set GCC_EXEC_PREFIX: This forces the compiler to look in the right place for internal tools.
+          # 1. AGBCCPATH: Defines the base directory for the wrapper
+          # 2. COMPILER_PATH: Must point to the directory containing 'cc1'
           export AGBCCPATH=$PWD/tools/agbcc
-          export GCC_EXEC_PREFIX=$PWD/tools/agbcc/
+          export COMPILER_PATH=$PWD/tools/agbcc/gcc
           
-          # Build the ROM
+          # Use 'make' to trigger the build
           make
           
       - name: Upload ROM Artifact
