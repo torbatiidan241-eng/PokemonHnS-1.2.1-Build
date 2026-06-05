@@ -20,16 +20,16 @@ jobs:
         run: |
           chmod -R +x tools/agbcc
           cd tools/agbcc
-          # Build compiler with ignore-errors flag
+          # Build compiler using CFLAGS to ignore modern errors
           make CFLAGS="-O2 -Wno-error" -C gcc
           
           # Ensure bin exists and move binary
           mkdir -p bin
           cp gcc/agbcc bin/agbcc
           
-          # Fix the header path for the compiler
-          # This ensures it finds string.h and other ginclude files
-          cp -r ginclude/* include/
+          # Fix headers: Copy them to the root include folder so they are accessible
+          # without requiring invalid command-line flags
+          cp -r include/* ../../include/
           cd ../..
 
       - name: Build Tools
@@ -38,12 +38,10 @@ jobs:
 
       - name: Build ROM
         run: |
-          # Set the environment variable for the compiler path
+          # Set the environment variable so the build system finds the compiler
           export AGBCCPATH=$PWD/tools/agbcc
-          
-          # Build the ROM, passing the include path for string.h resolution
-          # We use -I to explicitly point the compiler to the agbcc headers
-          make CFLAGS="-I$PWD/tools/agbcc/include"
+          # Build the ROM
+          make
           
       - name: Upload ROM Artifact
         uses: actions/upload-artifact@v4
