@@ -18,16 +18,13 @@ jobs:
 
       - name: Build agbcc
         run: |
-          # Navigate into your manually added agbcc folder
+          chmod +x tools/agbcc/build.sh
           cd tools/agbcc
-          # Build the compiler
           ./build.sh
-          # Return to root
           cd ../..
 
       - name: Build Tools
         run: |
-          # Build other project tools like gbagfx and ramscrgen
           make tools
 
       - name: Build ROM
