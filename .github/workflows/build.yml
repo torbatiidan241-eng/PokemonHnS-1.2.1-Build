@@ -12,6 +12,10 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
+      - name: Sync Submodules
+        run: |
+          git submodule update --init --recursive --force
+
       - name: Install Dependencies
         run: |
           sudo apt-get update
@@ -19,12 +23,12 @@ jobs:
 
       - name: Build Tools
         run: |
-          # This compiles the required GBA tools (agbcc, gbagfx, etc.)
+          # This compiles agbcc and other necessary tools from source
           make tools
 
       - name: Build ROM
         run: |
-          # Now that tools exist, the main compilation can proceed
+          # The standard build command
           make
 
       - name: Upload ROM Artifact
