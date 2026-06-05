@@ -20,16 +20,12 @@ jobs:
         run: |
           chmod -R +x tools/agbcc
           cd tools/agbcc
-          # Build compiler using CFLAGS to ignore modern errors
+          # Build the compiler
           make CFLAGS="-O2 -Wno-error" -C gcc
           
           # Ensure bin exists and move binary
           mkdir -p bin
           cp gcc/agbcc bin/agbcc
-          
-          # Fix headers: Copy them to the root include folder so they are accessible
-          # without requiring invalid command-line flags
-          cp -r include/* ../../include/
           cd ../..
 
       - name: Build Tools
@@ -38,8 +34,10 @@ jobs:
 
       - name: Build ROM
         run: |
-          # Set the environment variable so the build system finds the compiler
+          # Set the compiler path so it can find its own internal 'include' folder
+          # The compiler looks for 'include' relative to AGBCCPATH
           export AGBCCPATH=$PWD/tools/agbcc
+          
           # Build the ROM
           make
           
