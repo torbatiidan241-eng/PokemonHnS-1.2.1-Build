@@ -19,15 +19,14 @@ jobs:
 
       - name: Build Tools
         run: |
-          # Ensure tools are executable and build them
-          chmod +x tools/bin/* 2>/dev/null || true
+          # This compiles the required GBA tools (agbcc, gbagfx, etc.)
           make tools
 
       - name: Build ROM
         run: |
-          # Build the actual game ROM
+          # Now that tools exist, the main compilation can proceed
           make
-          
+
       - name: Upload ROM Artifact
         uses: actions/upload-artifact@v4
         with:
