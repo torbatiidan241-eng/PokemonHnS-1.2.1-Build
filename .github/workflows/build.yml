@@ -27,8 +27,11 @@ jobs:
           mkdir -p bin include
           cp gcc/agbcc bin/agbcc
           
-          # Force header placement in both the tool root and the gcc engine directory
-          # This satisfies hardcoded paths in legacy compilers
+          # Force binary placement: agbcc wrapper often looks for cc1 
+          # relative to its own location
+          cp gcc/cc1 bin/cc1
+          
+          # Force header placement
           cp -r ginclude/* include/
           mkdir -p gcc/include
           cp -r ginclude/* gcc/include/
@@ -40,13 +43,13 @@ jobs:
 
       - name: Build ROM
         run: |
-          # Exporting all paths required by the agbcc wrapper and the makefile
+          # Set paths to point to the local build
           export AGBCCPATH=$PWD/tools/agbcc
-          export COMPILER_PATH=$PWD/tools/agbcc/gcc
+          export COMPILER_PATH=$PWD/tools/agbcc/bin
           export GCC_EXEC_PREFIX=$PWD/tools/agbcc/
           export C_INCLUDE_PATH=$PWD/tools/agbcc/include
           
-          # Start the build
+          # Build the ROM
           make
           
       - name: Upload ROM Artifact
