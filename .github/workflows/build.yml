@@ -12,24 +12,23 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
+      - name: Force Initialize Submodules
+        run: |
+          git submodule sync --recursive
+          git submodule update --init --recursive --force
+
       - name: Install Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential libpng-dev gcc-arm-none-eabi
 
-      - name: Build Compiler Tools
+      - name: Build Tools
         run: |
-          # This compiles the agbcc compiler itself from the submodules
-          cd tools/agbcc
-          ./build.sh
-          cd ../..
-          
-          # This builds other necessary utilities like gbagfx and ramscrgen
+          # Now that submodules are forced, this directory should exist
           make tools
 
       - name: Build ROM
         run: |
-          # Final build command
           make
 
       - name: Upload ROM Artifact
