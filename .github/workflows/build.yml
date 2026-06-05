@@ -12,21 +12,20 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Force Initialize Submodules
+      - name: Verify and Build Tools
         run: |
-          git submodule sync --recursive
+          # 1. Force the submodule into existence
           git submodule update --init --recursive --force
-
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential libpng-dev gcc-arm-none-eabi
-
-      - name: Build Tools
-        run: |
-          # Now that submodules are forced, this directory should exist
+          
+          # 2. Check if the tool exists
+          if [ ! -f "tools/agbcc/build.sh" ]; then
+            echo "ERROR: tools/agbcc submodule is empty! Please check your repository structure."
+            exit 1
+          fi
+          
+          # 3. Build the tools
           make tools
-
+          
       - name: Build ROM
         run: |
           make
