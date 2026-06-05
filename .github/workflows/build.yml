@@ -19,14 +19,15 @@ jobs:
 
       - name: Build Tools
         run: |
-          # Build the tools required for the project (like agbcc and gbagfx)
+          # Ensure tools are executable and build them
+          chmod +x tools/bin/* 2>/dev/null || true
           make tools
 
       - name: Build ROM
         run: |
           # Build the actual game ROM
           make
-
+          
       - name: Upload ROM Artifact
         uses: actions/upload-artifact@v4
         with:
