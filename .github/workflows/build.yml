@@ -12,23 +12,24 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Sync Submodules
-        run: |
-          git submodule update --init --recursive --force
-
       - name: Install Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential libpng-dev gcc-arm-none-eabi
 
-      - name: Build Tools
+      - name: Build Compiler Tools
         run: |
-          # This compiles agbcc and other necessary tools from source
+          # This compiles the agbcc compiler itself from the submodules
+          cd tools/agbcc
+          ./build.sh
+          cd ../..
+          
+          # This builds other necessary utilities like gbagfx and ramscrgen
           make tools
 
       - name: Build ROM
         run: |
-          # The standard build command
+          # Final build command
           make
 
       - name: Upload ROM Artifact
