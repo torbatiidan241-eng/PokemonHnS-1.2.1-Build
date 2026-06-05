@@ -9,23 +9,18 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          submodules: recursive
           fetch-depth: 0
 
-      - name: Verify and Build Tools
+      - name: Install Dependencies
         run: |
-          # 1. Force the submodule into existence
-          git submodule update --init --recursive --force
-          
-          # 2. Check if the tool exists
-          if [ ! -f "tools/agbcc/build.sh" ]; then
-            echo "ERROR: tools/agbcc submodule is empty! Please check your repository structure."
-            exit 1
-          fi
-          
-          # 3. Build the tools
+          sudo apt-get update
+          sudo apt-get install -y build-essential libpng-dev gcc-arm-none-eabi
+
+      - name: Build Tools
+        run: |
+          # Since agbcc files are now physically in your repo, this will compile them
           make tools
-          
+
       - name: Build ROM
         run: |
           make
