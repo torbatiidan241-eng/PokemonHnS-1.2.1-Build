@@ -20,27 +20,21 @@ jobs:
         run: |
           chmod -R +x tools/agbcc
           cd tools/agbcc
-          # Some versions of agbcc require this specific build order
-          ./build.sh
-          # If ./build.sh didn't create the binary, compile the source directly
-          if [ ! -f "bin/agbcc" ]; then
-            cd gcc
-            make
-            cd ..
-          fi
-          # Final verification
-          if [ ! -f "bin/agbcc" ]; then
-            echo "ERROR: Still could not create agbcc binary"
-            exit 1
-          fi
+          # Force the build with flags that ignore modern compiler warnings
+          # and manually ensure the binary is placed in the 'bin' directory.
+          make CFLAGS="-O2 -Wno-error" -C gcc
+          mkdir -p bin
+          cp gcc/agbcc bin/agbcc
           cd ../..
 
       - name: Build Tools
         run: |
+          # Build other project-specific tools (gbagfx, etc.)
           make tools
 
       - name: Build ROM
         run: |
+          # Build the game ROM
           make
 
       - name: Upload ROM Artifact
