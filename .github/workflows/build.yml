@@ -20,10 +20,17 @@ jobs:
         run: |
           chmod -R +x tools/agbcc
           cd tools/agbcc
+          # Some versions of agbcc require this specific build order
           ./build.sh
-          # Verify the binary exists after build
+          # If ./build.sh didn't create the binary, compile the source directly
           if [ ! -f "bin/agbcc" ]; then
-            echo "ERROR: agbcc binary was not created!"
+            cd gcc
+            make
+            cd ..
+          fi
+          # Final verification
+          if [ ! -f "bin/agbcc" ]; then
+            echo "ERROR: Still could not create agbcc binary"
             exit 1
           fi
           cd ../..
