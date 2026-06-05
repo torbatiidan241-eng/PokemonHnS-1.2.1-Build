@@ -38,10 +38,13 @@ jobs:
 
       - name: Build ROM
         run: |
-          # Set the compiler path explicitly so it finds its headers
+          # Set the environment variable for the compiler path
           export AGBCCPATH=$PWD/tools/agbcc
-          make
-
+          
+          # Build the ROM, passing the include path for string.h resolution
+          # We use -I to explicitly point the compiler to the agbcc headers
+          make CFLAGS="-I$PWD/tools/agbcc/include"
+          
       - name: Upload ROM Artifact
         uses: actions/upload-artifact@v4
         with:
