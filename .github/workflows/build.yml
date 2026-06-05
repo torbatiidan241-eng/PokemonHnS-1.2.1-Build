@@ -18,20 +18,22 @@ jobs:
 
       - name: Build agbcc
         run: |
-          # Recursively apply execute permissions to all files in tools/agbcc
           chmod -R +x tools/agbcc
           cd tools/agbcc
           ./build.sh
+          # Verify the binary exists after build
+          if [ ! -f "bin/agbcc" ]; then
+            echo "ERROR: agbcc binary was not created!"
+            exit 1
+          fi
           cd ../..
 
       - name: Build Tools
         run: |
-          # Build the remaining project-specific tools (gbagfx, etc.)
           make tools
 
       - name: Build ROM
         run: |
-          # Build the game ROM
           make
 
       - name: Upload ROM Artifact
