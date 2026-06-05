@@ -20,21 +20,26 @@ jobs:
         run: |
           chmod -R +x tools/agbcc
           cd tools/agbcc
-          # Force the build with flags that ignore modern compiler warnings
-          # and manually ensure the binary is placed in the 'bin' directory.
+          # Build compiler with ignore-errors flag
           make CFLAGS="-O2 -Wno-error" -C gcc
+          
+          # Ensure bin exists and move binary
           mkdir -p bin
           cp gcc/agbcc bin/agbcc
+          
+          # Fix the header path for the compiler
+          # This ensures it finds string.h and other ginclude files
+          cp -r ginclude/* include/
           cd ../..
 
       - name: Build Tools
         run: |
-          # Build other project-specific tools (gbagfx, etc.)
           make tools
 
       - name: Build ROM
         run: |
-          # Build the game ROM
+          # Set the compiler path explicitly so it finds its headers
+          export AGBCCPATH=$PWD/tools/agbcc
           make
 
       - name: Upload ROM Artifact
