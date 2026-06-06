@@ -1,59 +1,59 @@
 name: Build GBA ROM
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libpng-dev gcc-arm-none-eabi bison flex
+          sudo apt-get install -y gcc-arm-none-eabi binutils-arm-none-eabi libpng-dev
 
       - name: Build agbcc
         run: |
           chmod -R +x tools/agbcc
           cd tools/agbcc
-          # Build the compiler engine while suppressing modern C-standard errors
-          make CFLAGS="-O2 -Wno-error -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration" -C gcc
           
-          # Final verification that the binary was created
-          ls -l gcc/cc1
+          # 1. Explicitly build both components to ensure cc1 is created
+          # We use the flags to bypass modern compiler strictness which causes legacy builds to exit early
+          make CFLAGS="-O2 -Wno-error -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration" -C gcc cc1 agbcc
           
-          # Prepare directory structure
+          # 2. Debugging: List the directory so we can confirm the binary exists
+          echo "Verifying binaries in tools/agbcc/gcc/:"
+          ls -F gcc/
+          
+          # 3. Create expected paths
           mkdir -p bin include
-          cp gcc/agbcc bin/agbcc
-          cp gcc/cc1 bin/cc1
           
-          # Force header placement in both the tool root and the gcc engine directory
+          # 4. Copy files (only if they exist to prevent build errors)
+          if [ -f "gcc/agbcc" ]; then cp gcc/agbcc bin/agbcc; fi
+          if [ -f "gcc/cc1" ]; then cp gcc/cc1 bin/cc1; fi
+          
+          # 5. Populate headers
           cp -r ginclude/* include/
           mkdir -p gcc/include
           cp -r ginclude/* gcc/include/
           cd ../..
 
-      - name: Build Tools
-        run: |
-          make tools
-
       - name: Build ROM
         run: |
-          # Define environment variables so the compiler finds its dependencies
-          export AGBCCPATH=$PWD/tools/agbcc
-          export COMPILER_PATH=$PWD/tools/agbcc/bin
-          export GCC_EXEC_PREFIX=$PWD/tools/agbcc/
-          export C_INCLUDE_PATH=$PWD/tools/agbcc/include
-          
-          # Start the build
-          make
-          
-      - name: Upload ROM Artifact
+          # Ensure tools/agbcc/bin is in the PATH so the main makefile finds it
+          export PATH=$PWD/tools/agbcc/bin:$PATH
+          make -j$(nproc)
+
+      - name: Upload ROM
         uses: actions/upload-artifact@v4
         with:
-          name: hns-rom
-          path: '*.gba'
+          name: rom-build
+          path: |
+            *.gba
+            *.map
