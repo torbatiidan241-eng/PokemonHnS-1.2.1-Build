@@ -14,43 +14,42 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libpng-dev gcc-arm-none-eabi
+          sudo apt-get install -y build-essential libpng-dev gcc-arm-none-eabi bison flex
 
       - name: Build agbcc
         run: |
-          sudo apt-get install -y bison flex
           chmod -R +x tools/agbcc
           cd tools/agbcc
-          # Build the compiler engine
-          # We remove -Wno-error temporarily to see if there are actual build failures
-          make -C gcc
+          # Build the compiler engine while suppressing modern C-standard errors
+          make CFLAGS="-O2 -Wno-error -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration" -C gcc
           
-          # Verify if cc1 was actually created
+          # Final verification that the binary was created
           ls -l gcc/cc1
           
-          # If it exists, proceed with setup
+          # Prepare directory structure
           mkdir -p bin include
           cp gcc/agbcc bin/agbcc
           cp gcc/cc1 bin/cc1
           
-          # Force header placement
+          # Force header placement in both the tool root and the gcc engine directory
           cp -r ginclude/* include/
           mkdir -p gcc/include
           cp -r ginclude/* gcc/include/
           cd ../..
+
       - name: Build Tools
         run: |
           make tools
 
       - name: Build ROM
         run: |
-          # Set paths to point to the local build
+          # Define environment variables so the compiler finds its dependencies
           export AGBCCPATH=$PWD/tools/agbcc
           export COMPILER_PATH=$PWD/tools/agbcc/bin
           export GCC_EXEC_PREFIX=$PWD/tools/agbcc/
           export C_INCLUDE_PATH=$PWD/tools/agbcc/include
           
-          # Build the ROM
+          # Start the build
           make
           
       - name: Upload ROM Artifact
