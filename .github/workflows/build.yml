@@ -22,30 +22,26 @@ jobs:
         run: |
           chmod -R +x tools/agbcc
           cd tools/agbcc/gcc
-          make CFLAGS="-O2 -Wno-error -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration"
+          # Using -j1 here ensures the toolchain itself builds reliably
+          make -j1 CFLAGS="-O2 -Wno-error -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration"
           cd ../../..
           
-          # Prepare bin and include directories
           mkdir -p tools/agbcc/bin tools/agbcc/include
-          
-          # Copy binaries
           if [ -f "tools/agbcc/gcc/cc1" ]; then cp tools/agbcc/gcc/cc1 tools/agbcc/bin/cc1; fi
           if [ -f "tools/agbcc/gcc/agbcc" ]; then cp tools/agbcc/gcc/agbcc tools/agbcc/bin/agbcc; fi
-          
-          # Ensure headers are in the expected tools/agbcc/include directory
           cp -r tools/agbcc/ginclude/* tools/agbcc/include/
 
       - name: Build ROM
         run: |
-          # Set paths so agbcc finds its own binaries and headers
           export AGBCCPATH=$PWD/tools/agbcc
           export COMPILER_PATH=$PWD/tools/agbcc/bin
           export C_INCLUDE_PATH=$PWD/tools/agbcc/include
           export PATH=$PWD/tools/agbcc/bin:$PATH
           
-          # Run the build
-          make -j$(nproc)
-
+          # CRITICAL: Build with -j1 to prevent 'Broken pipe' errors
+          # Legacy tools often cannot handle parallel compilation requests
+          make -j1
+          
       - name: Upload ROM
         uses: actions/upload-artifact@v4
         with:
