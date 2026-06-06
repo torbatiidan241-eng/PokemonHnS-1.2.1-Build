@@ -21,32 +21,28 @@ jobs:
       - name: Build agbcc
         run: |
           chmod -R +x tools/agbcc
-          cd tools/agbcc
+          # Navigate directly into the gcc subdirectory where the Makefile resides
+          cd tools/agbcc/gcc
           
-          # 1. Explicitly build both components to ensure cc1 is created
-          # We use the flags to bypass modern compiler strictness which causes legacy builds to exit early
-          make CFLAGS="-O2 -Wno-error -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration" -C gcc cc1 agbcc
+          # Build using the 'all' target with suppression flags for modern compiler warnings
+          make CFLAGS="-O2 -Wno-error -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration"
           
-          # 2. Debugging: List the directory so we can confirm the binary exists
-          echo "Verifying binaries in tools/agbcc/gcc/:"
-          ls -F gcc/
+          # Return to root to prepare bin/include directories
+          cd ../../..
+          mkdir -p tools/agbcc/bin tools/agbcc/include
           
-          # 3. Create expected paths
-          mkdir -p bin include
+          # Copy the generated binaries to the tools bin directory
+          if [ -f "tools/agbcc/gcc/cc1" ]; then cp tools/agbcc/gcc/cc1 tools/agbcc/bin/cc1; fi
+          if [ -f "tools/agbcc/gcc/agbcc" ]; then cp tools/agbcc/gcc/agbcc tools/agbcc/bin/agbcc; fi
           
-          # 4. Copy files (only if they exist to prevent build errors)
-          if [ -f "gcc/agbcc" ]; then cp gcc/agbcc bin/agbcc; fi
-          if [ -f "gcc/cc1" ]; then cp gcc/cc1 bin/cc1; fi
-          
-          # 5. Populate headers
-          cp -r ginclude/* include/
-          mkdir -p gcc/include
-          cp -r ginclude/* gcc/include/
-          cd ../..
+          # Force header placement
+          cp -r tools/agbcc/ginclude/* tools/agbcc/include/
+          mkdir -p tools/agbcc/gcc/include
+          cp -r tools/agbcc/ginclude/* tools/agbcc/gcc/include/
 
       - name: Build ROM
         run: |
-          # Ensure tools/agbcc/bin is in the PATH so the main makefile finds it
+          # Ensure tools/agbcc/bin is in the PATH so the main makefile finds the binaries
           export PATH=$PWD/tools/agbcc/bin:$PATH
           make -j$(nproc)
 
