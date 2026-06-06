@@ -20,32 +20,39 @@ jobs:
 
       - name: Build and Prepare Tools
         run: |
-          # 1. Compile project utilities (gbafix, scaninc, ramscrgen)
+          # 1. Compile project utilities
           make -j1 tools
           
-          # 2. Compile the agbcc engine
+          # 2. Build the agbcc engine
           chmod -R +x tools/agbcc
           cd tools/agbcc/gcc
+          # Clean first to ensure fresh build
+          make clean
           make -j1 CFLAGS="-O2 -Wno-error -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration"
           cd ../../..
           
-          # 3. Create the directory structure exactly as the compiler expects
+          # 3. Setup directory structure
           mkdir -p tools/agbcc/bin tools/agbcc/include
-          cp tools/agbcc/gcc/cc1 tools/agbcc/bin/cc1
-          cp tools/agbcc/gcc/agbcc tools/agbcc/bin/agbcc
           
-          # 4. Critical: Populate the internal include folder
-          # agbcc looks for headers inside 'include' at the same level as its 'bin' folder
-          cp -r tools/agbcc/ginclude/* tools/agbcc/include/
+          # 4. Copy the compiled binaries
+          # Look for 'cc1' in the gcc folder, and if it's there, move it.
+          # Note: If it's not named 'cc1', we look for the main output
+          if [ -f "tools/agbcc/gcc/cc1" ]; then
+            cp tools/agbcc/gcc/cc1 tools/agbcc/bin/cc1
+          elif [ -f "tools/agbcc/gcc/agbcc" ]; then
+            # Sometimes cc1 is generated as part of the agbcc binary
+            cp tools/agbcc/gcc/agbcc tools/agbcc/bin/cc1
+          fi
+          
+          cp tools/agbcc/gcc/agbcc tools/agbcc/bin/agbcc
+          cp -r tools/agbcc/include/* tools/agbcc/include/
 
       - name: Build ROM
         run: |
-          # Set the compiler path and force the include directory
-          # The -I flag ensures the compiler finds the headers
-          export AGBCCPATH=$PWD/tools/agbcc
+          # Ensure toolchain is in PATH
           export PATH=$PWD/tools/agbcc/bin:$PATH
           
-          # Execute the build with the include path explicitly defined
+          # Build with explicit include path
           make -j1 "CFLAGS=-I$PWD/tools/agbcc/include"
           
       - name: Upload ROM
