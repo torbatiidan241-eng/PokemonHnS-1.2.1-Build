@@ -18,36 +18,35 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gcc-arm-none-eabi binutils-arm-none-eabi libpng-dev
 
-      - name: Build Environment and Tools
+      - name: Build and Prepare Tools
         run: |
-          # 1. Build the necessary helper tools (gbafix, scaninc, ramscrgen, etc.)
-          # Running 'make tools' triggers the rules defined in your Makefile
+          # 1. Compile project utilities (gbafix, scaninc, ramscrgen)
           make -j1 tools
           
-          # 2. Build the agbcc compiler engine
+          # 2. Compile the agbcc engine
           chmod -R +x tools/agbcc
           cd tools/agbcc/gcc
           make -j1 CFLAGS="-O2 -Wno-error -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration"
           cd ../../..
           
-          # 3. Setup toolchain structure
+          # 3. Create the directory structure exactly as the compiler expects
           mkdir -p tools/agbcc/bin tools/agbcc/include
-          if [ -f "tools/agbcc/gcc/cc1" ]; then cp tools/agbcc/gcc/cc1 tools/agbcc/bin/cc1; fi
-          if [ -f "tools/agbcc/gcc/agbcc" ]; then cp tools/agbcc/gcc/agbcc tools/agbcc/bin/agbcc; fi
+          cp tools/agbcc/gcc/cc1 tools/agbcc/bin/cc1
+          cp tools/agbcc/gcc/agbcc tools/agbcc/bin/agbcc
+          
+          # 4. Critical: Populate the internal include folder
+          # agbcc looks for headers inside 'include' at the same level as its 'bin' folder
           cp -r tools/agbcc/ginclude/* tools/agbcc/include/
 
       - name: Build ROM
         run: |
-          # Set up environment variables required by the project Makefile
+          # Set the compiler path and force the include directory
+          # The -I flag ensures the compiler finds the headers
           export AGBCCPATH=$PWD/tools/agbcc
-          export COMPILER_PATH=$PWD/tools/agbcc/bin
-          export C_INCLUDE_PATH=$PWD/tools/agbcc/include
-          # Ensure tools are in the PATH so the Makefile can find them
           export PATH=$PWD/tools/agbcc/bin:$PATH
           
-          # Run the main build
-          # -j1 prevents race conditions and broken pipes
-          make -j1
+          # Execute the build with the include path explicitly defined
+          make -j1 "CFLAGS=-I$PWD/tools/agbcc/include"
           
       - name: Upload ROM
         uses: actions/upload-artifact@v4
