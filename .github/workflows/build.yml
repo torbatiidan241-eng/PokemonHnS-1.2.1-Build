@@ -18,14 +18,19 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gcc-arm-none-eabi binutils-arm-none-eabi libpng-dev
 
-      - name: Build agbcc
+      - name: Build Environment and Tools
         run: |
+          # 1. Build the necessary helper tools (gbafix, scaninc, ramscrgen, etc.)
+          # Running 'make tools' triggers the rules defined in your Makefile
+          make -j1 tools
+          
+          # 2. Build the agbcc compiler engine
           chmod -R +x tools/agbcc
           cd tools/agbcc/gcc
-          # Using -j1 here ensures the toolchain itself builds reliably
           make -j1 CFLAGS="-O2 -Wno-error -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration"
           cd ../../..
           
+          # 3. Setup toolchain structure
           mkdir -p tools/agbcc/bin tools/agbcc/include
           if [ -f "tools/agbcc/gcc/cc1" ]; then cp tools/agbcc/gcc/cc1 tools/agbcc/bin/cc1; fi
           if [ -f "tools/agbcc/gcc/agbcc" ]; then cp tools/agbcc/gcc/agbcc tools/agbcc/bin/agbcc; fi
@@ -33,13 +38,15 @@ jobs:
 
       - name: Build ROM
         run: |
+          # Set up environment variables required by the project Makefile
           export AGBCCPATH=$PWD/tools/agbcc
           export COMPILER_PATH=$PWD/tools/agbcc/bin
           export C_INCLUDE_PATH=$PWD/tools/agbcc/include
+          # Ensure tools are in the PATH so the Makefile can find them
           export PATH=$PWD/tools/agbcc/bin:$PATH
           
-          # CRITICAL: Build with -j1 to prevent 'Broken pipe' errors
-          # Legacy tools often cannot handle parallel compilation requests
+          # Run the main build
+          # -j1 prevents race conditions and broken pipes
           make -j1
           
       - name: Upload ROM
