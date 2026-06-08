@@ -1,4 +1,4 @@
-name: Build
+concurrency: name: Build
 
 on:
   push:
@@ -29,11 +29,3 @@ jobs:
           path: |
             *.gba
             build/
-          
-      - name: Upload ROM
-        uses: actions/upload-artifact@v4
-        with:
-          name: rom-build
-          path: |
-            *.gba
-            *.map
