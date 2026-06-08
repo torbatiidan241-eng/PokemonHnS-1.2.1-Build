@@ -1,14 +1,15 @@
-name: Build GBA ROM
+name: Build
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "progress" ]
   pull_request:
-    branches: [ main ]
+    branches: [ "progress" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -18,42 +19,16 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gcc-arm-none-eabi binutils-arm-none-eabi libpng-dev
 
-      - name: Build and Prepare Tools
-        run: |
-          # 1. Compile project utilities
-          make -j1 tools
-          
-          # 2. Build the agbcc engine
-          chmod -R +x tools/agbcc
-          cd tools/agbcc/gcc
-          # Clean first to ensure fresh build
-          make clean
-          make -j1 CFLAGS="-O2 -Wno-error -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration"
-          cd ../../..
-          
-          # 3. Setup directory structure
-          mkdir -p tools/agbcc/bin tools/agbcc/include
-          
-          # 4. Copy the compiled binaries
-          # Look for 'cc1' in the gcc folder, and if it's there, move it.
-          # Note: If it's not named 'cc1', we look for the main output
-          if [ -f "tools/agbcc/gcc/cc1" ]; then
-            cp tools/agbcc/gcc/cc1 tools/agbcc/bin/cc1
-          elif [ -f "tools/agbcc/gcc/agbcc" ]; then
-            # Sometimes cc1 is generated as part of the agbcc binary
-            cp tools/agbcc/gcc/agbcc tools/agbcc/bin/cc1
-          fi
-          
-          cp tools/agbcc/gcc/agbcc tools/agbcc/bin/agbcc
-          cp -r tools/agbcc/include/* tools/agbcc/include/
-
       - name: Build ROM
-        run: |
-          # Ensure toolchain is in PATH
-          export PATH=$PWD/tools/agbcc/bin:$PATH
-          
-          # Build with explicit include path
-          make -j1 "CFLAGS=-I$PWD/tools/agbcc/include"
+        run: make
+
+      - name: Upload ROM Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: rom-build
+          path: |
+            *.gba
+            build/
           
       - name: Upload ROM
         uses: actions/upload-artifact@v4
